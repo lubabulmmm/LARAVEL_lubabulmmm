@@ -10,7 +10,7 @@ class RumahSakitController extends Controller
     public function index()
     {
         $rumahsakit = RumahSakit::latest()->get();
-        return view('dashboard', compact('dashboard'));
+        return view('rumahsakit.index', compact('rumahsakit'));
     }
 
     public function store(Request $request)

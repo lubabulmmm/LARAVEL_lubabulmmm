@@ -20,6 +20,17 @@ Route::middleware([
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
-
-    Route::resource('rumahsakit', RumahSakitController::class);
+    // Route::resource('pasien', App\Http\Controllers\PasienController::class);
+    Route::get('pasien', [App\Http\Controllers\PasienController::class, 'index'])->name('pasien.index');
+    Route::get('pasien/rumahsakit/{id}', [App\Http\Controllers\PasienController::class, 'getByRumahSakit'])->name('pasien.getByRumahSakit');
+    Route::post('pasien', [App\Http\Controllers\PasienController::class, 'store'])->name('pasien.store');
+    Route::get('pasien/{id}/edit', [App\Http\Controllers\PasienController::class, 'edit'])->name('pasien.edit');
+    Route::put('pasien/{id}', [App\Http\Controllers\PasienController::class, 'update'])->name('pasien.update');
+    Route::delete('pasien/{id}', [App\Http\Controllers\PasienController::class, 'destroy'])->name('pasien.destroy');
+    // Route::resource('rumahsakit', RumahSakitController::class);
+    Route::get('rumahsakit', [RumahSakitController::class, 'index'])->name('rumahsakit.index');
+    Route::post('rumahsakit', [RumahSakitController::class, 'store'])->name('rumahsakit.store');
+    Route::get('rumahsakit/{id}/edit', [RumahSakitController::class, 'edit'])->name('rumahsakit.edit');
+    Route::put('rumahsakit/{id}', [RumahSakitController::class, 'update'])->name('rumahsakit.update');
+    Route::delete('rumahsakit/{id}', [RumahSakitController::class, 'destroy'])->name('rumahsakit.destroy');
 });
