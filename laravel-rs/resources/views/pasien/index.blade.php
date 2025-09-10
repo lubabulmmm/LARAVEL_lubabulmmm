@@ -34,7 +34,7 @@
                     </thead>
                     <tbody id="pasienTable">
                         @foreach ($pasien as $p)
-                            <tr>
+                            <tr data-id="{{ $p->id }}">
                                 <td class="px-6 py-4 border-b border-gray-300">{{ $p->nama_pasien }}</td>
                                 <td class="px-6 py-4 border-b border-gray-300">{{ $p->alamat }}</td>
                                 <td class="px-6 py-4 border-b border-gray-300">{{ $p->no_telepon }}</td>
@@ -113,24 +113,40 @@
     </div>
 
     @push('scripts')
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script>
+            // Setup AJAX CSRF Token
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
             function openModal() {
-                document.getElementById('pasienForm').reset();
-                document.getElementById('formModal').classList.remove('hidden');
+                $('#id').val('');
+                $('#pasienForm').trigger('reset');
+                $('#formModal').removeClass('hidden');
             }
 
             function closeModal() {
-                document.getElementById('formModal').classList.add('hidden');
+                $('#formModal').addClass('hidden');
             }
 
             function editData(id) {
-                $.get(`/pasien/${id}/edit`, function(data) {
-                    $('#id').val(data.id);
-                    $('#nama_pasien').val(data.nama_pasien);
-                    $('#alamat').val(data.alamat);
-                    $('#no_telepon').val(data.no_telepon);
-                    $('#rumah_sakit_id').val(data.rumah_sakit_id);
-                    openModal();
+                $.ajax({
+                    url: `/pasien/${id}/edit`,
+                    type: 'GET',
+                    success: function(response) {
+                        $('#id').val(response.id);
+                        $('#nama_pasien').val(response.nama_pasien);
+                        $('#alamat').val(response.alamat);
+                        $('#no_telepon').val(response.no_telepon);
+                        $('#rumah_sakit_id').val(response.rumah_sakit_id);
+                        openModal();
+                    },
+                    error: function(xhr) {
+                        alert('Error: ' + xhr.responseJSON.message);
+                    }
                 });
             }
 
@@ -139,12 +155,14 @@
                     $.ajax({
                         url: `/pasien/${id}`,
                         type: 'DELETE',
-                        data: {
-                            "_token": "{{ csrf_token() }}"
-                        },
                         success: function(response) {
-                            alert(response.success);
-                            location.reload();
+                            if (response.success) {
+                                alert(response.message);
+                                $(`tr[data-id="${id}"]`).remove();
+                            }
+                        },
+                        error: function(xhr) {
+                            alert('Error: ' + xhr.responseJSON.message);
                         }
                     });
                 }
@@ -153,34 +171,45 @@
             $('#filter_rs').change(function() {
                 let id = $(this).val();
                 if (id) {
-                    $.get(`/pasien/filter/${id}`, function(data) {
-                        let html = '';
-                        data.forEach(function(p) {
-                            html += `
-                            <tr>
-                                <td class="px-6 py-4 border-b border-gray-300">${p.nama_pasien}</td>
-                                <td class="px-6 py-4 border-b border-gray-300">${p.alamat}</td>
-                                <td class="px-6 py-4 border-b border-gray-300">${p.no_telepon}</td>
-                                <td class="px-6 py-4 border-b border-gray-300">${p.rumah_sakit.nama_rumah_sakit}</td>
-                                <td class="px-6 py-4 border-b border-gray-300">
-                                    <button class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded"
-                                            onclick="editData(${p.id})">
-                                        Edit
-                                    </button>
-                                    <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
-                                            onclick="deleteData(${p.id})">
-                                        Hapus
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-                        });
-                        $('#pasienTable').html(html);
+                    $.ajax({
+                        url: `/pasien/rumahsakit/${id}`,
+                        type: 'GET',
+                        success: function(response) {
+                            updateTable(response);
+                        },
+                        error: function(xhr) {
+                            alert('Error: ' + xhr.responseJSON.message);
+                        }
                     });
                 } else {
                     location.reload();
                 }
             });
+
+            function updateTable(data) {
+                let html = '';
+                data.forEach(function(p) {
+                    html += `
+                <tr data-id="${p.id}">
+                    <td class="px-6 py-4 border-b border-gray-300">${p.nama_pasien}</td>
+                    <td class="px-6 py-4 border-b border-gray-300">${p.alamat}</td>
+                    <td class="px-6 py-4 border-b border-gray-300">${p.no_telepon}</td>
+                    <td class="px-6 py-4 border-b border-gray-300">${p.rumah_sakit.nama_rumah_sakit}</td>
+                    <td class="px-6 py-4 border-b border-gray-300">
+                        <button class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded"
+                                onclick="editData(${p.id})">
+                            Edit
+                        </button>
+                        <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
+                                onclick="deleteData(${p.id})">
+                            Hapus
+                        </button>
+                    </td>
+                </tr>
+            `;
+                });
+                $('#pasienTable').html(html);
+            }
 
             $('#pasienForm').submit(function(e) {
                 e.preventDefault();
@@ -193,11 +222,14 @@
                     type: method,
                     data: $(this).serialize(),
                     success: function(response) {
-                        alert(response.success);
-                        location.reload();
+                        if (response.success) {
+                            alert(response.message);
+                            closeModal();
+                            location.reload();
+                        }
                     },
-                    error: function(response) {
-                        alert('Terjadi kesalahan!');
+                    error: function(xhr) {
+                        alert('Error: ' + xhr.responseJSON.message);
                     }
                 });
             });

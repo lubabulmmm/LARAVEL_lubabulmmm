@@ -15,47 +15,84 @@ class PasienController extends Controller
         return view('pasien.index', compact('pasien', 'rumahsakit'));
     }
 
-    public function getByRumahSakit($id)
-    {
-        $pasien = Pasien::where('rumah_sakit_id', $id)->get();
-        return response()->json($pasien);
-    }
-
     public function store(Request $request)
     {
-        $request->validate([
-            'nama_pasien' => 'required',
-            'alamat' => 'required',
-            'no_telepon' => 'required',
-            'rumah_sakit_id' => 'required'
-        ]);
+        try {
+            $validated = $request->validate([
+                'nama_pasien' => 'required',
+                'alamat' => 'required',
+                'no_telepon' => 'required',
+                'rumah_sakit_id' => 'required|exists:rumah_sakit,id'
+            ]);
 
-        Pasien::create($request->all());
-        return response()->json(['success' => 'Data berhasil ditambahkan']);
+            Pasien::create($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data berhasil ditambahkan'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
     }
 
     public function edit($id)
     {
-        $pasien = Pasien::find($id);
+        $pasien = Pasien::findOrFail($id);
         return response()->json($pasien);
     }
 
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'nama_pasien' => 'required',
-            'alamat' => 'required',
-            'no_telepon' => 'required',
-            'rumah_sakit_id' => 'required'
-        ]);
+        try {
+            $validated = $request->validate([
+                'nama_pasien' => 'required',
+                'alamat' => 'required',
+                'no_telepon' => 'required',
+                'rumah_sakit_id' => 'required|exists:rumah_sakit,id'
+            ]);
 
-        Pasien::find($id)->update($request->all());
-        return response()->json(['success' => 'Data berhasil diupdate']);
+            $pasien = Pasien::findOrFail($id);
+            $pasien->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data berhasil diupdate'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
     }
 
     public function destroy($id)
     {
-        Pasien::find($id)->delete();
-        return response()->json(['success' => 'Data berhasil dihapus']);
+        try {
+            $pasien = Pasien::findOrFail($id);
+            $pasien->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    public function getByRumahSakit($id)
+    {
+        $pasien = Pasien::with('rumahSakit')
+            ->where('rumah_sakit_id', $id)
+            ->get();
+        return response()->json($pasien);
     }
 }

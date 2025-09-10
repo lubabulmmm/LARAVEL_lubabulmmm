@@ -15,39 +15,87 @@ class RumahSakitController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'nama_rumah_sakit' => 'required',
-            'alamat' => 'required',
-            'email' => 'required|email',
-            'telepon' => 'required'
-        ]);
+        try {
+            $request->validate([
+                'nama_rumah_sakit' => 'required|string|max:255',
+                'alamat' => 'required|string',
+                'email' => 'required|email|unique:rumah_sakit,email',
+                'telepon' => 'required|string|max:20'
+            ]);
 
-        RumahSakit::create($request->all());
-        return response()->json(['success' => 'Data berhasil ditambahkan']);
+            RumahSakit::create($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data berhasil ditambahkan'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan data',
+                'errors' => $e->getMessage()
+            ], 422);
+        }
     }
 
     public function edit($id)
     {
-        $rumahsakit = RumahSakit::find($id);
-        return response()->json($rumahsakit);
+        try {
+            $rumahsakit = RumahSakit::findOrFail($id);
+            return response()->json([
+                'success' => true,
+                'data' => $rumahsakit
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data tidak ditemukan'
+            ], 404);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'nama_rumah_sakit' => 'required',
-            'alamat' => 'required',
-            'email' => 'required|email',
-            'telepon' => 'required'
-        ]);
+        try {
+            $rumahsakit = RumahSakit::findOrFail($id);
 
-        RumahSakit::find($id)->update($request->all());
-        return response()->json(['success' => 'Data berhasil diupdate']);
+            $request->validate([
+                'nama_rumah_sakit' => 'required|string|max:255',
+                'alamat' => 'required|string',
+                'email' => 'required|email|unique:rumah_sakit,email,'.$id,
+                'telepon' => 'required|string|max:20'
+            ]);
+
+            $rumahsakit->update($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data berhasil diupdate'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengupdate data',
+                'errors' => $e->getMessage()
+            ], 422);
+        }
     }
 
     public function destroy($id)
     {
-        RumahSakit::find($id)->delete();
-        return response()->json(['success' => 'Data berhasil dihapus']);
+        try {
+            $rumahsakit = RumahSakit::findOrFail($id);
+            $rumahsakit->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus data'
+            ], 422);
+        }
     }
 }

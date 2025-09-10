@@ -10,7 +10,7 @@ class RumahSakit extends Model
     use HasFactory;
 
     protected $table = 'rumah_sakit';
-    
+
     protected $fillable = [
         'nama_rumah_sakit',
         'alamat',
@@ -18,7 +18,6 @@ class RumahSakit extends Model
         'telepon'
     ];
 
-    // Relationship with Pasien
     public function pasien()
     {
         return $this->hasMany(Pasien::class);
